@@ -1,0 +1,40 @@
+{
+  "name": "auto-mailer-backend",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "pm2": "NODE_ENV=production pm2 start dist/index.js --watch -i max",
+    "pm2:staging": "NODE_ENV=staging pm2 start dist/index.js --watch -i max",
+    "prod": "NODE_ENV=production node dist/index.js",
+    "staging": "NODE_ENV=staging node dist/index.js",
+    "dev": "HTTPS=true NODE_ENV=development ts-node-dev --inspect --respawn src/index.ts",
+    "test": "NODE_ENV=test nyc ./node_modules/.bin/mocha --require ts-node/register ./src/test/**/**/**/**/*.test.ts",
+    "build": "rimraf build && tsc -p tsconfig.json"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@aws-sdk/smithy-client": "^3.234.0",
+    "@aws-sdk/util-base64": "^3.208.0",
+    "@cyclic.sh/dynamodb": "^0.0.33",
+    "agenda": "^5.0.0",
+    "body-parser": "^1.20.1",
+    "bree": "^9.1.2",
+    "datejs": "^1.0.0-rc3",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jfs": "^0.2.6",
+    "mongodb": "^4.13.0",
+    "nodemailer": "^6.8.0",
+    "pm2": "^5.2.2"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.15",
+    "@types/node": "^18.11.18",
+    "@types/nodemailer": "^6.4.7",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^4.9.4"
+  }
+}
