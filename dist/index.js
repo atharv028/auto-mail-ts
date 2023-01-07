@@ -7,7 +7,7 @@ import { MongoClient, ServerApiVersion } from "mongodb";
 import processMail from "./jobs/schedule_mail.js";
 import { randomInt } from "crypto";
 const app = Express.default();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 6000;
 const agenda = new Agenda({
     processEvery: "1 minute",
     db: { address: process.env.MONGO_URI, collection: "agendaJobs" },
@@ -20,30 +20,27 @@ const client = new MongoClient(process.env.MONGO_URI, {
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.listen(port, () => console.log(`Listening to port ${port}`));
-var jobNum = 0;
 const scheduleMailFun = async (jobId, timeStart, bodyHtml, subject, emails, toEmails, senderMail, senderPass) => {
-    const job = agenda.create(jobId, async (job) => {
-        await processMail(emails, toEmails, bodyHtml, subject, senderMail, senderPass, jobId).catch((err) => console.log(err));
-    });
     const date = new Date(Date.parse(timeStart));
     const hour = date.getHours();
     const min = date.getMinutes();
-    console.log(`${min} ${hour}`);
-    job.priority("highest");
-    job.repeatEvery(`${min} ${hour} * * 0-6`, {
-        timezone: "Asia/Kolkata",
-        startDate: new Date(),
-        skipImmediate: true,
+    const time = `${min}:${hour}`;
+    const job = agenda.define(jobId, async (job) => {
+        await processMail(emails, toEmails, bodyHtml, subject, senderMail, senderPass, jobId, time).catch((err) => console.log(err));
     });
-    await job.save();
-    console.log(job);
+    agenda.every(`${min} ${hour} * * 0-6`, jobId, {}, { timezone: "Asia/Kolkata", skipImmediate: true });
+    console.log(await agenda.jobs({ name: jobId }));
     await client.db("emails").collection(senderMail).insertOne({
         jobId: jobId,
         currIndex: 0,
+        time: time,
         completedList: [],
         totalList: emails,
     });
 };
+app.get("/", (req, res) => {
+    res.send("Hello World");
+});
 app.post("/scheduleEmail", async (req, res) => {
     const senderMail = req.body.senderMail;
     const senderPass = req.body.senderPass;
@@ -79,6 +76,7 @@ app.get("/getJobs", async (req, res) => {
             res.send({
                 status: 200,
                 jobId: jobs.jobId,
+                time: jobs.time,
                 completedMails: jobs.completedList,
                 totalList: jobs.totalList,
                 message: `${remainingCount}/${parseInt(jobs.totalList.length)} remaining for ${uid}`,

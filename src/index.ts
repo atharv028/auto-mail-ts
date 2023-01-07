@@ -8,7 +8,7 @@ import processMail from "./jobs/schedule_mail.js";
 import { randomInt } from "crypto";
 
 const app = Express.default();
-const port = process.env.PORT || 4000;
+const port = process.env.PORT || 6000;
 const agenda = new Agenda(<AgendaConfig>{
   processEvery: "1 minute",
   db: { address: process.env.MONGO_URI, collection: "agendaJobs" },
@@ -33,7 +33,11 @@ const scheduleMailFun = async (
   senderMail: string,
   senderPass: string
 ) => {
-  const job = agenda.create(jobId, async (job) => {
+  const date = new Date(Date.parse(timeStart));
+  const hour = date.getHours();
+  const min = date.getMinutes();
+  const time = `${min}:${hour}`;
+  const job = agenda.define(jobId, async (job) => {
     await processMail(
       emails,
       toEmails,
@@ -41,23 +45,21 @@ const scheduleMailFun = async (
       subject,
       senderMail,
       senderPass,
-      jobId
+      jobId,
+      time
     ).catch((err) => console.log(err));
   });
-  const date = new Date(Date.parse(timeStart));
-  const hour = date.getHours();
-  const min = date.getMinutes();
-  console.log(`${min} ${hour}`);
-  job.repeatEvery(`${min} ${hour} * * 0-6`, {
-    timezone: "Asia/Kolkata",
-    startDate: new Date(),
-    skipImmediate: true,
-  });
-  await job.save();
-  console.log(job);
+  agenda.every(
+    `${min} ${hour} * * 0-6`,
+    jobId,
+    {},
+    { timezone: "Asia/Kolkata", skipImmediate: true }
+  );
+  console.log(await agenda.jobs({ name: jobId }));
   await client.db("emails").collection(senderMail).insertOne({
     jobId: jobId,
     currIndex: 0,
+    time: time,
     completedList: [],
     totalList: emails,
   });
@@ -113,6 +115,7 @@ app.get("/getJobs", async (req, res) => {
       res.send({
         status: 200,
         jobId: jobs.jobId,
+        time: jobs.time,
         completedMails: jobs.completedList,
         totalList: jobs.totalList,
         message: `${remainingCount}/${parseInt(

@@ -5,7 +5,7 @@ const client = new MongoClient(process.env.MONGO_URI, {
     useUnifiedTopology: true,
     serverApi: ServerApiVersion.v1,
 });
-async function processMail(mailList, toEmails, body, subject, senderMail, senderPass, jobId) {
+async function processMail(mailList, toEmails, body, subject, senderMail, senderPass, jobId, time) {
     await client.connect();
     const transporter = nodeMailer.createTransport({
         host: "smtp.gmail.com",
@@ -28,6 +28,7 @@ async function processMail(mailList, toEmails, body, subject, senderMail, sender
                 completedList: currList,
                 totalList: mailList,
                 jobId: jobId,
+                time: time,
             });
             await client
                 .db("emails")
@@ -59,6 +60,7 @@ async function processMail(mailList, toEmails, body, subject, senderMail, sender
                     completedList: [...obj.completedList, ...currList],
                     totalList: mailList,
                     jobId: jobId,
+                    time: time,
                 });
                 await client
                     .db("emails")

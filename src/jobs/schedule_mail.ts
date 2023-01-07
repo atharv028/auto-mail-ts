@@ -13,7 +13,8 @@ async function processMail(
   subject: string,
   senderMail: string,
   senderPass: string,
-  jobId: string
+  jobId: string,
+  time: string
 ) {
   await client.connect();
   const transporter = nodeMailer.createTransport({
@@ -37,6 +38,7 @@ async function processMail(
         completedList: currList,
         totalList: mailList,
         jobId: jobId,
+        time: time,
       });
       await client
         .db("emails")
@@ -67,6 +69,7 @@ async function processMail(
             completedList: [...obj.completedList, ...currList],
             totalList: mailList,
             jobId: jobId,
+            time: time,
           });
         await client
           .db("emails")
