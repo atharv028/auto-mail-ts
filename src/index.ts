@@ -23,8 +23,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.listen(port, () => console.log(`Listening to port ${port}`));
 
-var jobNum: number = 0;
-
 const scheduleMailFun = async (
   jobId: string,
   timeStart: string,
@@ -64,6 +62,10 @@ const scheduleMailFun = async (
     totalList: emails,
   });
 };
+
+app.get("/", (req, res) => {
+  res.send("Hello World");
+});
 
 app.post("/scheduleEmail", async (req, res) => {
   const senderMail = req.body.senderMail;
