@@ -5,7 +5,7 @@ const client = new MongoClient(process.env.MONGO_URI, {
     useUnifiedTopology: true,
     serverApi: ServerApiVersion.v1,
 });
-async function processMail(mailList, toEmails, body, subject, senderMail, senderPass, jobId, time) {
+async function processMail(mailList, toEmails, body, subject, senderMail, senderPass, jobId, time, agenda) {
     await client.connect();
     const transporter = nodeMailer.createTransport({
         host: "smtp.gmail.com",
@@ -38,11 +38,13 @@ async function processMail(mailList, toEmails, body, subject, senderMail, sender
         else {
             await sendMail(transporter, mailList, body, subject, toEmails);
             await client.db("emails").collection(senderMail).drop();
+            await agenda.disable({ name: jobId });
         }
     }
     else {
         if (parseInt(obj.currIndex) == mailList.length) {
             await client.db("emails").collection(senderMail).drop();
+            await agenda.cancel({ name: jobId });
         }
         else {
             const currList = mailList.slice(parseInt(obj.currIndex), parseInt(obj.currIndex) + 90);
@@ -50,6 +52,7 @@ async function processMail(mailList, toEmails, body, subject, senderMail, sender
             const count = parseInt(obj.currIndex) + currList.length;
             if (count == mailList.length) {
                 await client.db("emails").collection(senderMail).drop();
+                await agenda.cancel({ name: jobId });
             }
             else {
                 await client

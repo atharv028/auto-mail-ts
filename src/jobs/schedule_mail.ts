@@ -1,5 +1,6 @@
 import nodeMailer, { Transporter } from "nodemailer";
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
+import { Agenda } from "agenda";
 const client = new MongoClient(process.env.MONGO_URI, <MongoClientOptions>{
   useNewUrlParser: true,
   useUnifiedTopology: true,
@@ -14,7 +15,8 @@ async function processMail(
   senderMail: string,
   senderPass: string,
   jobId: string,
-  time: string
+  time: string,
+  agenda: Agenda
 ) {
   await client.connect();
   const transporter = nodeMailer.createTransport({
@@ -47,10 +49,12 @@ async function processMail(
     } else {
       await sendMail(transporter, mailList, body, subject, toEmails);
       await client.db("emails").collection(senderMail).drop();
+      await agenda.disable({ name: jobId });
     }
   } else {
     if (parseInt(obj.currIndex) == mailList.length) {
       await client.db("emails").collection(senderMail).drop();
+      await agenda.cancel({ name: jobId });
     } else {
       const currList = mailList.slice(
         parseInt(obj.currIndex),
@@ -60,6 +64,7 @@ async function processMail(
       const count = parseInt(obj.currIndex) + currList.length;
       if (count == mailList.length) {
         await client.db("emails").collection(senderMail).drop();
+        await agenda.cancel({ name: jobId });
       } else {
         await client
           .db("emails")

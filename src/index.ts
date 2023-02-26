@@ -46,15 +46,25 @@ const scheduleMailFun = async (
       senderMail,
       senderPass,
       jobId,
-      time
+      time,
+      agenda
     ).catch((err) => console.log(err));
   });
+  if(process.env.NODE_ENV === 'production'){
   agenda.every(
     `${min} ${hour} * * 0-6`,
     jobId,
     {},
     { timezone: "Asia/Kolkata", skipImmediate: true }
   );
+  }else{
+    agenda.every(
+      `* * * * *`,
+      jobId,
+      {},
+      { timezone: "Asia/Kolkata", skipImmediate: true }
+    );
+    }
   console.log(await agenda.jobs({ name: jobId }));
   await client.db("emails").collection(senderMail).insertOne({
     jobId: jobId,
